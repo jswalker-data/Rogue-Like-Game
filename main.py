@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 import tcod
 
-from actions import EscapeAction, MovementAction
+from engine import Engine
+from entity import Entity
+from game_map import GameMap
 from input_handlers import EventHandler
 
 
@@ -12,9 +14,8 @@ def main() -> None:
     screen_width = 80
     screen_height = 50
     
-    #Track player posiiton (TCOD needs int, floats error)
-    player_x = int(screen_width/2)
-    player_y = int(screen_height/2)
+    map_width = 80
+    map_height = 45
     
     #What font to use (the one saved in the repo)
     tileset = tcod.tileset.load_tilesheet(
@@ -23,6 +24,18 @@ def main() -> None:
 
     #Create an instance of our class, to receive and process events
     event_handler = EventHandler()
+    
+    #Call entity class and define
+    player = Entity(int(screen_width / 2), int(screen_height / 2), '@', (255, 255, 255))
+    npc = Entity(int(screen_width / 2 - 5), int(screen_height / 2), '@', (255, 255, 0))
+    
+    #set will eventually hold all our entities
+    entities = {player, npc}
+    
+    #Call game map
+    game_map = GameMap(map_width, map_height)
+    
+    engine = Engine(entities= entities, event_handler= event_handler, game_map= game_map, player= player)
     
     #Create the screen
     #Definisng vsync is slightly redundant but all the best
@@ -43,34 +56,12 @@ def main() -> None:
         while True:
             
             #Where to print
-            root_console.print(x= player_x, y= player_y , string= '@')
+            engine.render(console= root_console, context= context)
             
             #Update the screen with what we told it to display
-            context.present(root_console)
+            events = tcod.event.wait()
             
-            #Clear console after each event (avoids snake!)
-            root_console.clear()
-            
-            #Wait for an input from user and exit when 'x' is pressed
-            for event in tcod.event.wait():
-                
-                #Sends an event to it's place, pressng 'X' to ev_quit and 
-                #a keyboard stroke to ev_keydown
-                action = event_handler.dispatch(event)
-                
-                #No key or a non recognised key
-                if action is None:
-                    continue
-                
-                #If action is an instance of MovementAction then return the
-                #values to move the character
-                if isinstance(action, MovementAction):
-                    player_x += action.dx
-                    player_y += action.dy
-                    
-                #Quit with esc
-                elif isinstance(action, EscapeAction):
-                    raise SystemExit()
+            engine.handle_events(events)
 
 if __name__ == '__main__':
     main()
