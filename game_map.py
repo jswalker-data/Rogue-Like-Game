@@ -1,3 +1,15 @@
+"""
+Overall approcah is filling the room with walls and then carving out
+a path and room for us to navigate
+
+Most generation will occur in procgen.py as we may want multiple alternate 
+generators for different room types
+
+//TODO: Thinking like Boss rooms every 5 or something with unique outlines?
+//TODO: Maybe easter egg rooms as well, every x rooms or use an rng string
+
+
+"""
 
 import numpy as np
 from tcod.console import Console
@@ -13,11 +25,10 @@ class GameMap:
         
         #Create a 2D array filled with same values from tile_types.floor
         #fills self.tiles with floor tiles
-        self.tiles= np.full((width, height), fill_value= tile_types.floor, order= 'F')
+        self.tiles= np.full((width, height), fill_value= tile_types.wall, order= 'F')
         
-        #overrides a small area with a wall
-        #TODO: Remove as this is a POC
-        self.tiles[30:33, 22]= tile_types.wall
+        
+        
 
     #Restricts player to avoid void
     def in_bounds(self, x: int, y: int) -> bool:
