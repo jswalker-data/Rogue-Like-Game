@@ -35,7 +35,7 @@ class EventHandler(tcod.event.EventDispatch[Action]):
         
         #Esc key returns EscapeAction
         #TODO: make this a menu maybe?
-        elif key == tcod.event.K_ESCAPE:
+        elif key == tcod.event.KeySym.ESCAPE:
             action = EscapeAction()
             
         return action

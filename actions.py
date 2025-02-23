@@ -41,6 +41,7 @@ class MovementAction(Action):
         dest_x = entity.x + self.dx
         dest_y = entity.y + self.dy
 
+        #Double check walkable and in bounds
         if not engine.game_map.in_bounds(dest_x, dest_y):
             return  # Destination is out of bounds.
         if not engine.game_map.tiles["walkable"][dest_x, dest_y]:
