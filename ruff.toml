@@ -1,0 +1,5 @@
+line-length = 85
+fix = true
+
+[lint]
+select = ["E", "F"]  # Optional: Adjust which linting rules you want
