@@ -67,9 +67,7 @@ def main() -> None:
     ) as context:
         # Creates the console we are drawing to
         # n.p order= 'F' reverses numpys unintuitive [y,x] notation
-        root_console = tcod.console.Console(
-            screen_width, screen_height, order="F"
-        )
+        root_console = tcod.console.Console(screen_width, screen_height, order="F")
 
         # Game loop
         while True:
