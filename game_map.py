@@ -42,7 +42,7 @@ class GameMap:
     ) -> Optional[Entity]:
         for entity in self.entities:
             if (
-                entity.blocks_movement
+                entity.block_movements
                 and entity.x == location_x
                 and entity.y == location_y
             ):
