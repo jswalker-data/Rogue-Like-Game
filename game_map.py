@@ -5,8 +5,9 @@ a path and room for us to navigate
 Most generation will occur in procgen.py as we may want multiple alternate
 generators for different room types
 
-//TODO: Thinking like Boss rooms every 5 or something with unique outlines?
+//TODO: Thinking like Boss rooms every 5 floors or something with unique outlines?
 //TODO: Maybe easter egg rooms as well, every x rooms or use an rng string
+//TODO: Relates to the generator as well to initialise these alternate rooms
 
 """
 
@@ -21,11 +22,19 @@ from tcod.console import Console
 import tile_types
 
 if TYPE_CHECKING:
+    from engine import Engine
     from entity import Entity
 
 
 class GameMap:
-    def __init__(self, width: int, height: int, entities: Iterable[Entity] = ()):
+    def __init__(
+        self,
+        engine: Engine,
+        width: int,
+        height: int,
+        entities: Iterable[Entity] = (),
+    ):
+        self.engine = engine
         self.width, self.height = width, height
         self.entities = set(entities)
 

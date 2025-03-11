@@ -10,7 +10,7 @@ import tile_types
 from game_map import GameMap
 
 if TYPE_CHECKING:
-    from entity import Entity
+    from engine import Engine
 
 
 class RectangularRoom:
@@ -68,9 +68,7 @@ def place_entities(
         y = random.randint(room.y1 + 1, room.y2 - 1)
 
         # Check no other entities at that location, stops  stacking
-        if not any(
-            entity.x == x and entity.y == y for entity in dungeon.entities
-        ):
+        if not any(entity.x == x and entity.y == y for entity in dungeon.entities):
             if random.random() < 0.8:
                 entity_factories.orc.spawn(dungeon, x, y)
             else:
@@ -96,13 +94,9 @@ def tunnel_between(
     # get line from one set to another
     # Yield returns the values but keeps the state rather then closing it
     # off, picks up where we left off when called again
-    for x, y in tcod.los.bresenham(
-        (x1, y1), (corner_x, corner_y)
-    ).tolist():
+    for x, y in tcod.los.bresenham((x1, y1), (corner_x, corner_y)).tolist():
         yield x, y
-    for x, y in tcod.los.bresenham(
-        (corner_x, corner_y), (x2, y2)
-    ).tolist():
+    for x, y in tcod.los.bresenham((corner_x, corner_y), (x2, y2)).tolist():
         yield x, y
 
 
@@ -114,11 +108,12 @@ def generate_dungeon(
     map_width: int,
     map_height: int,
     max_monsters_per_room: int,
-    player: Entity,
+    engine: Engine,
 ) -> GameMap:
     """Generate new dungeon map"""
 
-    dungeon = GameMap(map_width, map_height, entities=[player])
+    player = engine.player
+    dungeon = GameMap(engine, map_width, map_height, entities=[player])
 
     rooms: List[RectangularRoom] = []
 
@@ -143,7 +138,7 @@ def generate_dungeon(
 
         # First room generated, so player start
         if len(rooms) == 0:
-            player.x, player.y = new_room.center
+            player.place(*new_room.center, dungeon)
 
         # All other rooms except first
         else:

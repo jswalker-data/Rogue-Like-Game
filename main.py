@@ -5,7 +5,6 @@ import tcod
 
 from engine import Engine
 import entity_factories
-from input_handlers import EventHandler
 from procgen import generate_dungeon
 
 
@@ -32,29 +31,26 @@ def main() -> None:
         tcod.tileset.CHARMAP_TCOD,
     )
 
-    # Create an instance of our class, to receive and process events
-    event_handler = EventHandler()
-
     # Call entity class and define
     # We can't use spawn as that passes the gamemap which isnt created yet
     player = copy.deepcopy(entity_factories.player)
 
+    engine = Engine(player=player)
+
     # Call game map
-    game_map = generate_dungeon(
+    engine.game_map = generate_dungeon(
         max_rooms=max_rooms,
         room_min_size=room_min_size,
         room_max_size=room_max_size,
         map_width=map_width,
         map_height=map_height,
         max_monsters_per_room=max_monsters_per_room,
-        player=player,
+        engine=engine,
     )
 
-    engine = Engine(
-        event_handler=event_handler,
-        game_map=game_map,
-        player=player,
-    )
+    # Create our start fov
+    engine.update_fov()
+
     # Create the screen
     # Definisng vsync is slightly redundant but all the best
     # games have it!!
@@ -78,9 +74,7 @@ def main() -> None:
             )
 
             # Update the screen with what we told it to display
-            events = tcod.event.wait()
-
-            engine.handle_events(events)
+            engine.event_handler.handle_events()
 
 
 if __name__ == "__main__":
