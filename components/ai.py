@@ -70,7 +70,7 @@ class HostileEnemy(BaseAI):
 
     def perform(self) -> None:
         target = self.engine.player
-        dx = target.x - self.entity.y
+        dx = target.x - self.entity.x
         dy = target.y - self.entity.y
         distance = max(abs(dx), abs(dy))
 

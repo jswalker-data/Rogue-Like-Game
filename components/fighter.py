@@ -1,10 +1,19 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from components.base_component import BaseComponent
+from input_handlers import GameOverEventHandler
+from render_order import RenderOrder
+
+if TYPE_CHECKING:
+    from entity import Actor
 
 
 # Inherit base component to allow access to entity and engine
 class Fighter(BaseComponent):
+    entity: Actor
+
     def __init__(self, hp: int, defense: int, power: int):
         # Getter and setter of hp, allows access of hp as normal var
         self.max_hp = hp
@@ -21,3 +30,21 @@ class Fighter(BaseComponent):
     @hp.setter
     def hp(self, value: int) -> None:
         self._hp = max(0, min(value, self.max_hp))
+        if self._hp == 0 and self.entity.ai:
+            self.die()
+
+    def die(self) -> None:
+        if self.engine.player is self.entity:
+            death_message = "You died!"
+            self.engine.event_handler = GameOverEventHandler(self.engine)
+        else:
+            death_message = f"{self.entity.name} is dead!"
+
+        self.entity.char = "%"
+        self.entity.colour = (191, 0, 0)
+        self.entity.blocks_movement = False
+        self.entity.ai = None
+        self.entity.name = f"remains of {self.entity.name}"
+        self.entity.render_order = RenderOrder.CORPSE
+
+        print(death_message)
