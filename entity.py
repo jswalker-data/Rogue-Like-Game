@@ -1,10 +1,18 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING, Tuple, TypeVar, Optional
+from typing import TYPE_CHECKING, Tuple, TypeVar, Optional, Type
+
+from render_order import RenderOrder
 
 if TYPE_CHECKING:
+    from components.ai import BaseAI
+    from components.fighter import Fighter
     from game_map import GameMap
+
+
+# // TODO: block_movement always True for actor. Ghost enemies???
+# // TODO: maybe when certain ghosts die they turn into ghosts
 
 T = TypeVar("T", bound="Entity")
 
@@ -26,14 +34,16 @@ class Entity:
         char: str = "?",
         colour: Tuple[int, int, int] = (255, 255, 255),
         name: str = "<Unamed>",
-        block_movements: bool = False,
+        blocks_movement: bool = False,
+        render_order: RenderOrder = RenderOrder.CORPSE,
     ):
         self.x = x
         self.y = y
         self.char = char
         self.colour = colour
         self.name = name
-        self.block_movements = block_movements
+        self.blocks_movement = blocks_movement
+        self.render_order = render_order
         if gamemap:
             # If the map isnt here now it will be later set
             self.gamemap = gamemap
@@ -64,3 +74,35 @@ class Entity:
                 self.gamemap.entities.remove(self)
             self.gamemap = gamemap
             gamemap.entities.add(self)
+
+
+class Actor(Entity):
+    # Actor class init
+    def __init__(
+        self,
+        *,
+        x: int = 0,
+        y: int = 0,
+        char: str = "?",
+        colour: Tuple[int, int, int] = (255, 255, 255),
+        name: str = "<Unnamed>",
+        ai_cls: Type[BaseAI],
+        fighter: Fighter,
+    ):
+        super().__init__(
+            x=x,
+            y=y,
+            char=char,
+            colour=colour,
+            name=name,
+            blocks_movement=True,
+            render_order=RenderOrder.ACTOR,
+        )
+        self.ai: Optional[BaseAI] = ai_cls(self)
+        self.fighter = fighter
+        self.fighter.entity = self
+
+    @property
+    def is_alive(self) -> bool:
+        """Returns true as long as this actor is alove and can perform"""
+        return bool(self.ai)
