@@ -3,6 +3,7 @@ import copy
 
 import tcod
 
+import colour
 from engine import Engine
 import entity_factories
 from procgen import generate_dungeon
@@ -15,7 +16,7 @@ def main() -> None:
     screen_height = 50
 
     map_width = 80
-    map_height = 45
+    map_height = 43
 
     room_max_size = 10
     room_min_size = 6
@@ -51,6 +52,11 @@ def main() -> None:
     # Create our start fov
     engine.update_fov()
 
+    engine.message_log.add_message(
+        "Hello and welcome, adventurer, to yet another random dungeon! Who would have thought it!",
+        colour.welcome_text,
+    )
+
     # Create the screen
     # Definisng vsync is slightly redundant but all the best
     # games have it!!
@@ -68,13 +74,12 @@ def main() -> None:
         # Game loop
         while True:
             # Where to print
-            engine.render(
-                console=root_console,
-                context=context,
-            )
+            root_console.clear()
+            engine.event_handler.on_render(console=root_console)
+            context.present(root_console)
 
             # Update the screen with what we told it to display
-            engine.event_handler.handle_events()
+            engine.event_handler.handle_events(context)
 
 
 if __name__ == "__main__":
