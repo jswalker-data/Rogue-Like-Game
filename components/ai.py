@@ -6,7 +6,6 @@ import numpy as np  # type: ignore
 import tcod
 
 from actions import Action, MeleeAction, MovementAction, WaitAction
-from components.base_component import BaseComponent
 
 if TYPE_CHECKING:
     from entity import Actor
@@ -16,7 +15,7 @@ if TYPE_CHECKING:
 # //TODO: Terrain could take longer to pass? Water?
 
 
-class BaseAI(Action, BaseComponent):
+class BaseAI(Action):
     entity: Actor
 
     def perform(self) -> None:

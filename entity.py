@@ -23,12 +23,12 @@ class Entity:
     enemies, items and anyting else
     """
 
-    gamemap: GameMap
+    parent: GameMap
 
     # char is display character, colour is rgb
     def __init__(
         self,
-        gamemap: Optional[GameMap] = None,
+        parent: Optional[GameMap] = None,
         x: int = 0,
         y: int = 0,
         char: str = "?",
@@ -44,17 +44,21 @@ class Entity:
         self.name = name
         self.blocks_movement = blocks_movement
         self.render_order = render_order
-        if gamemap:
-            # If the map isnt here now it will be later set
-            self.gamemap = gamemap
-            gamemap.entities.add(self)
+        if parent:
+            # If parent isnt here now it will be later set
+            self.parent = parent
+            parent.entities.add(self)
+
+    @property
+    def gamemap(self) -> GameMap:
+        return self.parent.gamemap
 
     def spawn(self: T, gamemap: GameMap, x: int, y: int) -> T:
         """Spawn a copy of this instance at the location"""
         clone = copy.deepcopy(self)
         clone.x = x
         clone.y = y
-        clone.gamemap = gamemap
+        clone.parent = gamemap
         gamemap.entities.add(clone)
         return clone
 
@@ -70,9 +74,9 @@ class Entity:
         self.y = y
         if gamemap:
             # We could be uninitialised
-            if hasattr(self, "gamemap"):
-                self.gamemap.entities.remove(self)
-            self.gamemap = gamemap
+            if hasattr(self, "parent"):
+                self.parent.entities.remove(self)
+            self.parent = gamemap
             gamemap.entities.add(self)
 
 
@@ -100,7 +104,7 @@ class Actor(Entity):
         )
         self.ai: Optional[BaseAI] = ai_cls(self)
         self.fighter = fighter
-        self.fighter.entity = self
+        self.fighter.parent = self
 
     @property
     def is_alive(self) -> bool:
