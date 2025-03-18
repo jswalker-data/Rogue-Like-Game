@@ -3,10 +3,11 @@ from __future__ import annotations
 from typing import Optional, Tuple, TYPE_CHECKING
 
 import colour
+import exceptions
 
 if TYPE_CHECKING:
     from engine import Engine
-    from entity import Actor, Entity
+    from entity import Actor, Entity, Item
 
 
 class Action:
@@ -30,6 +31,26 @@ class Action:
         This method must be overridden by Action subclasses.
         """
         raise NotImplementedError()
+
+
+class ItemAction(Action):
+    def __init__(
+        self, entity: Actor, item: Item, target_xy: Optional[Tuple[int, int]] = None
+    ):
+        super().__init__(entity)
+        self.item = item
+        if not target_xy:
+            target_xy = entity.x, entity.y
+        self.target_xy = target_xy
+
+    @property
+    def target_actor(self) -> Optional[Actor]:
+        """Return the actor at the actions destination"""
+        return self.engine.game_map.get_actor_at_location(*self.target_xy)
+
+    def perform(self) -> None:
+        """Invoke the titems ability, this action will be given to provide context"""
+        self.item.consumable.activate(self)
 
 
 # Esc key for quitting game
@@ -76,7 +97,7 @@ class MeleeAction(ActionWithDirection):
     def perform(self) -> None:
         target = self.target_actor
         if not target:
-            return  # No entity to attack.
+            raise exceptions.Impossible("Nothing to attack!")
 
         # How much damage taken
         damage = self.entity.fighter.power - target.fighter.defense
@@ -105,13 +126,17 @@ class MovementAction(ActionWithDirection):
 
         # Double check walkable and in bounds
         if not self.engine.game_map.in_bounds(dest_x, dest_y):
-            return  # Destination is out of bounds.
+            # Destination is out of bounds
+            raise exceptions.Impossible("That way is blocked!")
+
         if not self.engine.game_map.tiles["walkable"][dest_x, dest_y]:
-            return  # Destination is blocked by a tile.
+            # Destination is blocked by a tile
+            raise exceptions.Impossible("That way is blocked!")
 
         # Safeguard, should never be triggered due to other criteria
         if self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y):
-            return  # Destination is blocked by an entity
+            # Destination is blocked by an entity
+            raise exceptions.Impossible("That way is blocked!")
 
         self.entity.move(self.dx, self.dy)
 

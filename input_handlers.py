@@ -9,6 +9,9 @@ from tcod import libtcodpy
 
 from actions import Action, BumpAction, EscapeAction, WaitAction
 
+import colour
+import exceptions
+
 if TYPE_CHECKING:
     from engine import Engine
 
@@ -62,11 +65,30 @@ class EventHandler(tcod.event.EventDispatch[Action]):
     def __init__(self, engine: Engine):
         self.engine = engine
 
-    def handle_events(self, context: tcod.context.Context) -> None:
-        # Iterate through events and give knowledge of mouse position to the events
-        for event in tcod.event.wait():
-            context.convert_event(event)
-            self.dispatch(event)
+    def handle_events(self, event: tcod.event.Event) -> None:
+        self.handle_events(self.dispatch(event))
+
+    def handle_action(self, action: Optional[Action]) -> bool:
+        """
+        Handle actions returned from event methods
+
+        Returns True if the action will advance a turn
+        """
+        if action is None:
+            return False
+
+        try:
+            action.perform()
+        except exceptions.Impossible as exc:
+            self.engine.message_log.add_message(exc.args[0], colour.impossible)
+
+            # skip enemy turn on exception
+            return False
+
+        self.engine.handle_enemy_turns()
+
+        self.engine.update_fov()
+        return True
 
     def ev_mousemotion(self, event: tcod.event.MouseMotion) -> None:
         if self.engine.game_map.in_bounds(event.tile.x, event.tile.y):
@@ -81,20 +103,6 @@ class EventHandler(tcod.event.EventDispatch[Action]):
 
 
 class MainGameEventHandler(EventHandler):
-    def handle_events(self, context: tcod.context.Context) -> None:
-        # Iterate through events and give knowledge of mouse position to the events
-        for event in tcod.event.wait():
-            context.convert_event(event)
-            action = self.dispatch(event)
-
-            if action is None:
-                continue
-
-            # Action -> Enemy action -> Update FOV
-            action.perform()
-            self.engine.handle_enemy_turns()
-            self.engine.update_fov()
-
     # Method will receive key presses and return Action class or None
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
         # action holds whatever subclass of Action we choose or None
@@ -124,25 +132,9 @@ class MainGameEventHandler(EventHandler):
 
 
 class GameOverEventHandler(EventHandler):
-    def handle_events(self, context: tcod.context.Context) -> None:
-        for event in tcod.event.wait():
-            action = self.dispatch(event)
-
-            if action is None:
-                continue
-
-            action.perform()
-
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
-        action: Optional[Action] = None
-
-        key = event.sym
-
-        if key == tcod.event.KeySym.ESCAPE:
-            action = EscapeAction(self.engine.player)
-
-        # No valid key was pressed
-        return action
+    def ev_keydown(self, event: tcod.event.KeyDown) -> None:
+        if event.sym == tcod.event.KeySym.ESCAPE:
+            raise SystemExit()
 
 
 class HistoryViewer(EventHandler):
