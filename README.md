@@ -25,7 +25,7 @@ This project is **a work in progress** and is being built in my spare time. The 
 
 - Python 3.10+
 - `tcod` (install with `pip install tcod`)
-- Runs in a terminal or console window
+- Runs in a new window
 
 ---
 
