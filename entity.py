@@ -108,5 +108,5 @@ class Actor(Entity):
 
     @property
     def is_alive(self) -> bool:
-        """Returns true as long as this actor is alove and can perform"""
+        """Returns true as long as this actor is alive and can perform"""
         return bool(self.ai)

@@ -11,7 +11,7 @@ from procgen import generate_dungeon
 
 def main() -> None:
     # Defining variables for screen, map, rooms etc.
-    # TODO: move to json to clean up
+    # TODO: move to json to clean up and fix size
     screen_width = 80
     screen_height = 50
 

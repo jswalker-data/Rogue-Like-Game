@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from tcod.context import Context
 from tcod.console import Console
 from tcod.map import compute_fov
 
