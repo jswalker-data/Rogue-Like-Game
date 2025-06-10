@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Optional, Tuple, TYPE_CHECKING
 
 import colour
+import exceptions
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -76,7 +77,7 @@ class MeleeAction(ActionWithDirection):
     def perform(self) -> None:
         target = self.target_actor
         if not target:
-            return  # No entity to attack.
+            raise exceptions.Impossible("Nothing to attack!")  # No entity to attack.
 
         # How much damage taken
         damage = self.entity.fighter.power - target.fighter.defense
@@ -105,13 +106,17 @@ class MovementAction(ActionWithDirection):
 
         # Double check walkable and in bounds
         if not self.engine.game_map.in_bounds(dest_x, dest_y):
-            return  # Destination is out of bounds.
+            # Destination is out of bounds
+            raise exceptions.Impossible("This way is blocked!")
+
         if not self.engine.game_map.tiles["walkable"][dest_x, dest_y]:
-            return  # Destination is blocked by a tile.
+            # Destination is blocked by a tile
+            raise exceptions.Impossible("This way is blocked!")
 
         # Safeguard, should never be triggered due to other criteria
         if self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y):
-            return  # Destination is blocked by an entity
+            # Destination is blocked by an enemy
+            raise exceptions.Impossible("This way is blocked!")
 
         self.entity.move(self.dx, self.dy)
 
