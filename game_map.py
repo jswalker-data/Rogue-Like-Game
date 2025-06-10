@@ -100,7 +100,7 @@ class GameMap:
 
         # Set the console to be conditionally drawn (np.select) based on
         # condlist
-        console.rgb[0 : self.width, 0 : self.height] = np.select(
+        console.tiles_rgb[0 : self.width, 0 : self.height] = np.select(
             # Check if tile is visibile or explored then uses corresponding
             # value
             condlist=[self.visible, self.explored],
