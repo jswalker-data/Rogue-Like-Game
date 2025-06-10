@@ -33,7 +33,7 @@ end
 # Unset irrelevant variables.
 deactivate nondestructive
 
-set -gx VIRTUAL_ENV 'c:\Users\joshw\Repos\Rogue-Like-Game\.venv'
+set -gx VIRTUAL_ENV 'C:\Users\joshw\Repos\Rogue-Like-Game\.venv'
 
 set -gx _OLD_VIRTUAL_PATH $PATH
 set -gx PATH "$VIRTUAL_ENV/"Scripts $PATH
