@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import copy
-from typing import TYPE_CHECKING, Tuple, TypeVar, Optional, Type
+from typing import TYPE_CHECKING, Optional, Tuple, Type, TypeVar, Union
 
 from render_order import RenderOrder
 
@@ -9,13 +9,14 @@ if TYPE_CHECKING:
     from components.ai import BaseAI
     from components.consumable import Consumable
     from components.fighter import Fighter
+    from components.inventory import Inventory
     from game_map import GameMap
 
 
 # // TODO: block_movement always True for actor. Ghost enemies???
 # // TODO: maybe when certain ghosts die they turn into ghosts
 
-T = TypeVar("T", bound="Entity")
+T = TypeVar('T', bound='Entity')
 
 
 class Entity:
@@ -24,7 +25,7 @@ class Entity:
     enemies, items and anyting else
     """
 
-    parent: GameMap
+    parent: Union[GameMap, Inventory]
 
     # char is display character, colour is rgb
     def __init__(
@@ -32,9 +33,9 @@ class Entity:
         parent: Optional[GameMap] = None,
         x: int = 0,
         y: int = 0,
-        char: str = "?",
+        char: str = '?',
         colour: Tuple[int, int, int] = (255, 255, 255),
-        name: str = "<Unamed>",
+        name: str = '<Unamed>',
         blocks_movement: bool = False,
         render_order: RenderOrder = RenderOrder.CORPSE,
     ):
@@ -75,7 +76,7 @@ class Entity:
         self.y = y
         if gamemap:
             # We could be uninitialised
-            if hasattr(self, "parent"):
+            if hasattr(self, 'parent'):
                 self.parent.entities.remove(self)
             self.parent = gamemap
             gamemap.entities.add(self)
@@ -88,11 +89,12 @@ class Actor(Entity):
         *,
         x: int = 0,
         y: int = 0,
-        char: str = "?",
+        char: str = '?',
         colour: Tuple[int, int, int] = (255, 255, 255),
-        name: str = "<Unnamed>",
+        name: str = '<Unnamed>',
         ai_cls: Type[BaseAI],
         fighter: Fighter,
+        inventory: Inventory,
     ):
         super().__init__(
             x=x,
@@ -107,6 +109,9 @@ class Actor(Entity):
         self.fighter = fighter
         self.fighter.parent = self
 
+        self.inventory = inventory
+        self.inventory.parent = self
+
     @property
     def is_alive(self) -> bool:
         """Returns true as long as this actor is alive and can perform"""
@@ -119,9 +124,9 @@ class Item(Entity):
         *,
         x: int = 0,
         y: int = 0,
-        char: str = "?",
+        char: str = '?',
         colour: Tuple[int, int, int] = (255, 255, 255),
-        name: str = "<Unnamed>",
+        name: str = '<Unnamed>',
         consumable: Consumable,
     ):
         super().__init__(

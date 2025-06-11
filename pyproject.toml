@@ -1,0 +1,23 @@
+[tool.ruff]
+line-length = 120
+indent-width = 4
+extend-exclude = [
+  'example_file'
+]
+
+[tool.ruff.lint]
+select = ['E', 'F', 'C90', 'UP', 'I', 'A', 'C4', 'T10', 'T20', 'SIM', 'S']
+ignore = ['S101']
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.isort]
+known-first-party = ['tests']
+
+[tool.ruff.format]
+quote-style = 'single'
+indent-style = 'space'
+skip-magic-trailing-comma = false
+line-ending = 'auto'
+docstring-code-format = false

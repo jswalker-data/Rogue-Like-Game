@@ -5,8 +5,8 @@ import traceback
 import tcod
 
 import colour
-from engine import Engine
 import entity_factories
+from engine import Engine
 from procgen import generate_dungeon
 
 
@@ -28,7 +28,7 @@ def main() -> None:
 
     # What font to use (the one saved in the repo)
     tileset = tcod.tileset.load_tilesheet(
-        "dejavu10x10_gs_tc.png",
+        'dejavu10x10_gs_tc.png',
         32,
         8,
         tcod.tileset.CHARMAP_TCOD,
@@ -56,7 +56,7 @@ def main() -> None:
     engine.update_fov()
 
     engine.message_log.add_message(
-        "Hello and welcome, adventurer, to yet another random dungeon! Who would have thought it!",
+        'Hello and welcome, adventurer, to yet another random dungeon! Who would have thought it!',
         colour.welcome_text,
     )
 
@@ -67,12 +67,12 @@ def main() -> None:
         screen_width,
         screen_height,
         tileset=tileset,
-        title="Game",
+        title='Game',
         vsync=True,
     ) as context:
         # Creates the console we are drawing to
         # n.p order= 'F' reverses numpys unintuitive [y,x] notation
-        root_console = tcod.console.Console(screen_width, screen_height, order="F")
+        root_console = tcod.console.Console(screen_width, screen_height, order='F')
 
         # Game loop
         while True:
@@ -91,5 +91,5 @@ def main() -> None:
                 engine.message_log.add_message(traceback.format_exc(), colour.error)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

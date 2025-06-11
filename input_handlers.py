@@ -1,17 +1,18 @@
 # Type hinting that something can be set to None
 from __future__ import annotations
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import tcod
 
-from actions import Action, BumpAction, EscapeAction, WaitAction
-
+import actions
 import colour
 import exceptions
+from actions import Action, BumpAction, PickupAction, WaitAction
 
 if TYPE_CHECKING:
     from engine import Engine
+    from entity import Item
 
 
 MOVE_KEYS = {
@@ -88,6 +89,120 @@ class EventHandler(tcod.event.EventDispatch[Action]):
         self.engine.render(console)
 
 
+# Not super useful itsel but we will create special subclasses that do specific actions
+class AskuserEventHandler(EventHandler):
+    """Handles user input for actions that require special input."""
+
+    def handle_action(self, action: Optional[Action]) -> bool:
+        """Return to the main handler when valid action performed."""
+        if super().handle_action(action):
+            self.engine.event_handler = MainGameEventHandler(self.engine)
+            return True
+        return False
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
+        """By default any key exits this input handler."""
+        # Ignore modifier keys
+        if event.sym in {
+            tcod.event.K_LSHIFT,
+            tcod.event.K_RSHIFT,
+            tcod.event.K_LCTRL,
+            tcod.event.K_RCTRL,
+            tcod.event.K_LALT,
+            tcod.event.K_RALT,
+        }:
+            return None
+        return self.on_exit()
+
+    def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Optional[Action]:
+        """By default any mouse clicks exits this input handler."""
+        return self.on_exit()
+
+    def on_exit(self) -> Optional[Action]:
+        """Called when the user is trying to exit or cancel an action.
+
+        By default return to the main handker
+        """
+
+        self.engine.event_handler = MainGameEventHandler(self.engine)
+        return None
+
+
+class InventoryEventHandler(AskuserEventHandler):
+    """This handler lets the user select an item.
+
+    What happens then depends on the subclass
+    """
+
+    TITLE = '<missing title>'
+
+    def on_render(self, console: tcod.Console) -> None:
+        """Render an inventory menu, which displays the items in the inventory, and letter to access  it.
+        Will move to a different position based on where the player is located so player can see
+        where they are.
+        """
+        super().on_render(console)
+        number_of_items_in_inventory = len(self.engine.player.inventory.items)
+
+        # Make a minimum height of 3
+        height = max(3, number_of_items_in_inventory + 1)
+
+        x = 40 if self.engine.player.x <= 30 else 0
+
+        y = 0
+
+        width = len(self.TITLE) + 4
+
+        console.draw_frame(
+            x=x, y=y, width=width, height=height, title=self.TITLE, clear=True, fg=(255, 255, 255), bg=(0, 0, 0)
+        )
+
+        if number_of_items_in_inventory > 0:
+            for i, item in enumerate(self.engine.player.inventory.items):
+                item_key = chr(ord('a') + i)
+                console.print(x + 1, y + 1, f'({item_key}): {item.name}')
+        else:
+            console.print(x + 1, y + 1, '(Empty)')
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
+        player = self.engine.player
+        key = event.sym
+        index = key - tcod.event.K_a
+
+        if 0 <= index <= 26:
+            try:
+                selected_item = player.inventory.items[index]
+            except IndexError:
+                self.engine.message_log.add_message('Invalid entry.', colour.invalid)
+                return None
+            return self.on_item_selected(selected_item)
+        return super().ev_keydown(event)
+
+    def on_item_selected(self, item: Item) -> Optional[Action]:
+        """Called when the user selected a valid item."""
+        raise NotImplementedError()
+
+
+class InventoryActivateHandler(InventoryEventHandler):
+    """Handle using an inventory item."""
+
+    TITLE = 'Select and item to use'
+
+    def on_item_selected(self, item: Item) -> Optional[Action]:
+        """Return the action of the item selected."""
+        return item.consumable.get_action(self.engine.player)
+
+
+class InventoryDropHandler(InventoryEventHandler):
+    """Handle dropping an inventory item."""
+
+    TITLE = 'Select an item to drop'
+
+    def on_item_selected(self, item: Item) -> Optional[Action]:
+        """Drop this item."""
+        return actions.DropItem(self.engine.player, item)
+
+
 class MainGameEventHandler(EventHandler):
     def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
         action: Optional[Action] = None
@@ -99,13 +214,24 @@ class MainGameEventHandler(EventHandler):
         if key in MOVE_KEYS:
             dx, dy = MOVE_KEYS[key]
             action = BumpAction(player, dx, dy)
+
         elif key in WAIT_KEYS:
             action = WaitAction(player)
 
         elif key == tcod.event.K_ESCAPE:
-            action = EscapeAction(player)
+            raise SystemExit()
+
         elif key == tcod.event.K_v:
             self.engine.event_handler = HistoryViewer(self.engine)
+
+        elif key == tcod.event.K_g:
+            action = PickupAction(player)
+
+        elif key == tcod.event.K_i:
+            self.engine.event_handler = InventoryActivateHandler(self.engine)
+
+        elif key == tcod.event.K_d:
+            self.engine.event_handler = InventoryDropHandler(self.engine)
 
         # No valid key was pressed
         return action
@@ -140,9 +266,7 @@ class HistoryViewer(EventHandler):
 
         # Draw a frame with a custom banner title.
         log_console.draw_frame(0, 0, log_console.width, log_console.height)
-        log_console.print_box(
-            0, 0, log_console.width, 1, "┤Message history├", alignment=tcod.CENTER
-        )
+        log_console.print_box(0, 0, log_console.width, 1, '┤Message history├', alignment=tcod.CENTER)
 
         # Render the message log using the cursor parameter.
         self.engine.message_log.render_messages(

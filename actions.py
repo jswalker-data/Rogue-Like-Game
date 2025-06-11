@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple
 
 import colour
 import exceptions
@@ -33,10 +33,34 @@ class Action:
         raise NotImplementedError()
 
 
+class PickupAction(Action):
+    """Pickup an item and add it to the inventory, only if space"""
+
+    def __init__(self, entity: Actor):
+        super().__init__(entity)
+
+    def perform(self) -> None:
+        actor_location_x = self.entity.x
+        actor_location_y = self.entity.y
+        inventory = self.entity.inventory
+
+        for item in self.engine.game_map.items:
+            if actor_location_x == item.x and actor_location_y == item.y:
+                if len(inventory.items) >= inventory.capacity:
+                    raise exceptions.Impossible('Your inventory is full!')
+
+                self.engine.game_map.entities.remove(item)
+                item.parent = self.entity.parent
+                inventory.items.append(item)
+
+                self.engine.message_log.add_message(f'You picked up the {item.name}!')
+                return
+
+        raise exceptions.Impossible('There is no item here to pickup.')
+
+
 class ItemAction(Action):
-    def __init__(
-        self, entity: Actor, item: Item, target_xy: Optional[Tuple[int, int]] = None
-    ):
+    def __init__(self, entity: Actor, item: Item, target_xy: Optional[Tuple[int, int]] = None):
         super().__init__(entity)
         self.item = item
         if not target_xy:
@@ -53,11 +77,9 @@ class ItemAction(Action):
         self.item.consumable.activate(self)
 
 
-# Esc key for quitting game
-# TODO: Make a menu option maybe?
-class EscapeAction(Action):
+class DropItem(ItemAction):
     def perform(self) -> None:
-        raise SystemExit()
+        self.entity.inventory.drop(self.item)
 
 
 class WaitAction(Action):
@@ -97,26 +119,19 @@ class MeleeAction(ActionWithDirection):
     def perform(self) -> None:
         target = self.target_actor
         if not target:
-            raise exceptions.Impossible("Nothing to attack!")  # No entity to attack.
+            raise exceptions.Impossible('Nothing to attack!')  # No entity to attack.
 
         # How much damage taken
         damage = self.entity.fighter.power - target.fighter.defense
 
-        attack_desc = f"{self.entity.name.capitalize()} attacks {target.name}"
-        if self.entity is self.engine.player:
-            attack_colour = colour.player_atk
-        else:
-            attack_colour = colour.enemy_atk
+        attack_desc = f'{self.entity.name.capitalize()} attacks {target.name}'
+        attack_colour = colour.player_atk if self.entity is self.engine.player else colour.enemy_atk
 
         if damage > 0:
-            self.engine.message_log.add_message(
-                f"{attack_desc} for {damage} hit points", attack_colour
-            )
+            self.engine.message_log.add_message(f'{attack_desc} for {damage} hit points', attack_colour)
             target.fighter.hp -= damage
         else:
-            self.engine.message_log.add_message(
-                f"{attack_desc} but does no damage.", attack_colour
-            )
+            self.engine.message_log.add_message(f'{attack_desc} but does no damage.', attack_colour)
 
 
 # Move player
@@ -127,16 +142,16 @@ class MovementAction(ActionWithDirection):
         # Double check walkable and in bounds
         if not self.engine.game_map.in_bounds(dest_x, dest_y):
             # Destination is out of bounds
-            raise exceptions.Impossible("This way is blocked!")
+            raise exceptions.Impossible('This way is blocked!')
 
-        if not self.engine.game_map.tiles["walkable"][dest_x, dest_y]:
+        if not self.engine.game_map.tiles['walkable'][dest_x, dest_y]:
             # Destination is blocked by a tile
-            raise exceptions.Impossible("This way is blocked!")
+            raise exceptions.Impossible('This way is blocked!')
 
         # Safeguard, should never be triggered due to other criteria
         if self.engine.game_map.get_blocking_entity_at_location(dest_x, dest_y):
             # Destination is blocked by an enemy
-            raise exceptions.Impossible("This way is blocked!")
+            raise exceptions.Impossible('This way is blocked!')
 
         self.entity.move(self.dx, self.dy)
 
