@@ -13,14 +13,13 @@ generators for different room types
 
 from __future__ import annotations
 
-from typing import Iterable, TYPE_CHECKING, Optional, Iterator
-
+from typing import TYPE_CHECKING, Iterable, Iterator, Optional
 
 import numpy as np
 from tcod.console import Console
 
-from entity import Actor
 import tile_types
+from entity import Actor, Item
 
 if TYPE_CHECKING:
     from engine import Engine
@@ -41,11 +40,11 @@ class GameMap:
 
         # Create a 2D array filled with same values from tile_types.floor
         # fills self.tiles with floor tiles
-        self.tiles = np.full((width, height), fill_value=tile_types.wall, order="F")
+        self.tiles = np.full((width, height), fill_value=tile_types.wall, order='F')
 
         # Add new np frames for currently visible and previously seen
-        self.visible = np.full((width, height), fill_value=False, order="F")
-        self.explored = np.full((width, height), fill_value=False, order="F")
+        self.visible = np.full((width, height), fill_value=False, order='F')
+        self.explored = np.full((width, height), fill_value=False, order='F')
 
     @property
     def gamemap(self) -> GameMap:
@@ -54,21 +53,16 @@ class GameMap:
     @property
     def actors(self) -> Iterator[Actor]:
         """Iterate over this maps living actors."""
-        yield from (
-            entity
-            for entity in self.entities
-            if isinstance(entity, Actor) and entity.is_alive
-        )
+        yield from (entity for entity in self.entities if isinstance(entity, Actor) and entity.is_alive)
 
-    def get_blocking_entity_at_location(
-        self, location_x: int, location_y: int
-    ) -> Optional[Entity]:
+    # Find itrems on same tile as player
+    @property
+    def items(self) -> Iterator[Item]:
+        yield from (entity for entity in self.entities if isinstance(entity, Item))
+
+    def get_blocking_entity_at_location(self, location_x: int, location_y: int) -> Optional[Entity]:
         for entity in self.entities:
-            if (
-                entity.blocks_movement
-                and entity.x == location_x
-                and entity.y == location_y
-            ):
+            if entity.blocks_movement and entity.x == location_x and entity.y == location_y:
                 return entity
         return None
 
@@ -100,18 +94,16 @@ class GameMap:
 
         # Set the console to be conditionally drawn (np.select) based on
         # condlist
-        console.rgb[0 : self.width, 0 : self.height] = np.select(
+        console.tiles_rgb[0 : self.width, 0 : self.height] = np.select(
             # Check if tile is visibile or explored then uses corresponding
             # value
             condlist=[self.visible, self.explored],
-            choicelist=[self.tiles["light"], self.tiles["dark"]],
+            choicelist=[self.tiles['light'], self.tiles['dark']],
             # If neither true in condlist sets default
             default=tile_types.SHROUD,
         )
 
-        entities_sorted_for_rendering = sorted(
-            self.entities, key=lambda x: x.render_order.value
-        )
+        entities_sorted_for_rendering = sorted(self.entities, key=lambda x: x.render_order.value)
 
         for entity in entities_sorted_for_rendering:
             # Only print entities that are in the FOV
