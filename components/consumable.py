@@ -47,6 +47,6 @@ class HealingConsumable(Consumable):
                 f'You consume the {self.parent.name}, and recover {amount_recovered} HP!',
                 colour.health_recovered,
             )
-            self.consume
+            self.consume()
         else:
-            raise Impossible('Your health is already full.')
+            raise Impossible(f'Your health is already full.')

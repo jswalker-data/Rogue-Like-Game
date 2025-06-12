@@ -145,9 +145,15 @@ class InventoryEventHandler(AskuserEventHandler):
         number_of_items_in_inventory = len(self.engine.player.inventory.items)
 
         # Make a minimum height of 3
-        height = max(3, number_of_items_in_inventory + 1)
+        height = number_of_items_in_inventory + 2
 
-        x = 40 if self.engine.player.x <= 30 else 0
+        if height <= 3:
+            height = 3
+
+        if self.engine.player.x <= 30:
+            x = 40
+        else:
+            x = 0
 
         y = 0
 
@@ -160,7 +166,7 @@ class InventoryEventHandler(AskuserEventHandler):
         if number_of_items_in_inventory > 0:
             for i, item in enumerate(self.engine.player.inventory.items):
                 item_key = chr(ord('a') + i)
-                console.print(x + 1, y + 1, f'({item_key}): {item.name}')
+                console.print(x + 1, y + i + 1, f'({item_key}) {item.name}')
         else:
             console.print(x + 1, y + 1, '(Empty)')
 

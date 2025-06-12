@@ -55,9 +55,9 @@ class GameMap:
         """Iterate over this maps living actors."""
         yield from (entity for entity in self.entities if isinstance(entity, Actor) and entity.is_alive)
 
-    # Find itres on same tile as player
+    # Find itrems on same tile as player
     @property
-    def items(self) -> Iterator[Actor]:
+    def items(self) -> Iterator[Item]:
         yield from (entity for entity in self.entities if isinstance(entity, Item))
 
     def get_blocking_entity_at_location(self, location_x: int, location_y: int) -> Optional[Entity]:
