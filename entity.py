@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import math
 from typing import TYPE_CHECKING, Optional, Tuple, Type, TypeVar, Union
 
 from render_order import RenderOrder
@@ -76,11 +77,16 @@ class Entity:
         self.y = y
         if gamemap:
             # We could be uninitialised
-            if hasattr(self, 'parent'):
-                if self.parent is self.gamemap:
-                    self.gamemap.entities.remove(self)
+            if hasattr(self, 'parent') and self.parent is self.gamemap:
+                self.gamemap.entities.remove(self)
             self.parent = gamemap
             gamemap.entities.add(self)
+
+    def distance(self, x: int, y: int) -> float:
+        """
+        Return the distance between the current entity and a given coordinate
+        """
+        return math.sqrt((x - self.x) ** 2 + (y - self.y) ** 2)
 
 
 class Actor(Entity):

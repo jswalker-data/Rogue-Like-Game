@@ -47,12 +47,7 @@ class RectangularRoom:
         We need to keep this condition happy for a good dungeon!
         Other in the argument is this 'other' room we might intersect with
         """
-        return (
-            self.x1 <= other.x2
-            and self.x2 >= other.x1
-            and self.y1 <= other.y2
-            and self.y2 >= other.y1
-        )
+        return self.x1 <= other.x2 and self.x2 >= other.x1 and self.y1 <= other.y2 and self.y2 >= other.y1
 
 
 def place_entities(
@@ -81,13 +76,16 @@ def place_entities(
         y = random.randint(room.y1 + 1, room.y2 - 1)
 
         if not any(entity.x == x and entity.y == y for entity in dungeon.entities):
-            entity_factories.health_potion.spawn(dungeon, x, y)
+            item_chance = random.random()
+
+            if item_chance < 0.7:
+                entity_factories.health_potion.spawn(dungeon, x, y)
+            else:
+                entity_factories.lightning_scroll.spawn(dungeon, x, y)
 
 
 # Take 2 sets of x, y and return iterator of 2 tuples of ints
-def tunnel_between(
-    start: Tuple[int, int], end: Tuple[int, int]
-) -> Iterator[Tuple[int, int]]:
+def tunnel_between(start: Tuple[int, int], end: Tuple[int, int]) -> Iterator[Tuple[int, int]]:
     """Return an L-shaped tunnel between two points"""
     x1, y1 = start
     x2, y2 = end
