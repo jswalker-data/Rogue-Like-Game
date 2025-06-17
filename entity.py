@@ -31,7 +31,7 @@ class Entity:
     # char is display character, colour is rgb
     def __init__(
         self,
-        parent: Optional[GameMap] = None,
+        parent: GameMap | None = None,
         x: int = 0,
         y: int = 0,
         char: str = '?',
@@ -71,7 +71,7 @@ class Entity:
         self.x += dx
         self.y += dy
 
-    def place(self, x: int, y: int, gamemap: Optional[GameMap] = None) -> None:
+    def place(self, x: int, y: int, gamemap: GameMap | None = None) -> None:
         """Place at new location. Handles moving across the map"""
         self.x = x
         self.y = y
@@ -112,7 +112,7 @@ class Actor(Entity):
             blocks_movement=True,
             render_order=RenderOrder.ACTOR,
         )
-        self.ai: Optional[BaseAI] = ai_cls(self)
+        self.ai: BaseAI | None = ai_cls(self)
         self.fighter = fighter
         self.fighter.parent = self
 

@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 class Consumable(BaseComponent):
     parent: Item
 
-    def get_action(self, consumer: Actor) -> Optional[actions.Action]:
+    def get_action(self, consumer: Actor) -> actions.Action | None:
         """Try and return the action for item"""
         return actions.ItemAction(consumer, self.parent)
 
