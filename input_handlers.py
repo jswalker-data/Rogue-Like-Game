@@ -1,7 +1,7 @@
 # Type hinting that something can be set to None
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable, Tuple
 
 import tcod
 
@@ -270,6 +270,18 @@ class LookHandler(SelectIndexHandler):
     def on_index_selected(self, x: int, y: int) -> None:
         """Return back to main handler."""
         self.engine.event_handler = MainGameEventHandler(self.enging)
+
+
+class SingleRangedAttackhandler(SelectIndexHandler):
+    """Handles targeting a single enemy. Only the enemy selected will be affected."""
+
+    def __init__(self, engine: Engine, callback: Callable[[Tuple[int, int]], Action | None]):
+        super().__init__(engine)
+
+        self.callback = callback
+
+    def on_index_selected(self, x: int, y: int) -> Action | None:
+        return self.callback((x, y))
 
 
 class MainGameEventHandler(EventHandler):
