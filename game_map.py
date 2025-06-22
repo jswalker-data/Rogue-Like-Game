@@ -60,13 +60,13 @@ class GameMap:
     def items(self) -> Iterator[Item]:
         yield from (entity for entity in self.entities if isinstance(entity, Item))
 
-    def get_blocking_entity_at_location(self, location_x: int, location_y: int) -> Optional[Entity]:
+    def get_blocking_entity_at_location(self, location_x: int, location_y: int) -> Entity | None:
         for entity in self.entities:
             if entity.blocks_movement and entity.x == location_x and entity.y == location_y:
                 return entity
         return None
 
-    def get_actor_at_location(self, x: int, y: int) -> Optional[Actor]:
+    def get_actor_at_location(self, x: int, y: int) -> Actor | None:
         for actor in self.actors:
             if actor.x == x and actor.y == y:
                 return actor

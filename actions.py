@@ -68,7 +68,7 @@ class ItemAction(Action):
         self.target_xy = target_xy
 
     @property
-    def target_actor(self) -> Optional[Actor]:
+    def target_actor(self) -> Actor | None:
         """RFeturn the actor at this actions destination"""
         return self.engine.game_map.get_actor_at_location(*self.target_xy)
 
@@ -100,13 +100,13 @@ class ActionWithDirection(Action):
         return self.entity.x + self.dx, self.entity.y + self.dy
 
     @property
-    def blocking_entity(self) -> Optional[Entity]:
+    def blocking_entity(self) -> Entity | None:
         """Return the blocking entity at this actions destination"""
         return self.engine.game_map.get_blocking_entity_at_location(*self.dest_xy)
 
     # Return the actor where we are moving to, so we know what we are attacking!!
     @property
-    def target_actor(self) -> Optional[Actor]:
+    def target_actor(self) -> Actor | None:
         """Return the actor at this actions location"""
         return self.engine.game_map.get_actor_at_location(*self.dest_xy)
 

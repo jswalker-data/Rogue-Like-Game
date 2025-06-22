@@ -1,7 +1,7 @@
 # Type hinting that something can be set to None
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Callable, Tuple
 
 import tcod
 
@@ -51,6 +51,11 @@ WAIT_KEYS = {
     tcod.event.K_CLEAR,
 }
 
+CONFIRM_KEYS = {
+    tcod.event.K_RETURN,
+    tcod.event.K_KP_ENTER,
+}
+
 
 class EventHandler(tcod.event.EventDispatch[Action]):
     def __init__(self, engine: Engine):
@@ -59,7 +64,7 @@ class EventHandler(tcod.event.EventDispatch[Action]):
     def handle_events(self, event: tcod.event.Event) -> None:
         self.handle_action(self.dispatch(event))
 
-    def handle_action(self, action: Optional[Action]) -> bool:
+    def handle_action(self, action: Action | None) -> bool:
         """Handle actions returned from event methods.
 
         Returns True if the action will advance a turn.
@@ -82,7 +87,7 @@ class EventHandler(tcod.event.EventDispatch[Action]):
         if self.engine.game_map.in_bounds(event.tile.x, event.tile.y):
             self.engine.mouse_location = event.tile.x, event.tile.y
 
-    def ev_quit(self, event: tcod.event.Quit) -> Optional[Action]:
+    def ev_quit(self, event: tcod.event.Quit) -> Action | None:
         raise SystemExit()
 
     def on_render(self, console: tcod.Console) -> None:
@@ -93,14 +98,14 @@ class EventHandler(tcod.event.EventDispatch[Action]):
 class AskuserEventHandler(EventHandler):
     """Handles user input for actions that require special input."""
 
-    def handle_action(self, action: Optional[Action]) -> bool:
+    def handle_action(self, action: Action | None) -> bool:
         """Return to the main handler when valid action performed."""
         if super().handle_action(action):
             self.engine.event_handler = MainGameEventHandler(self.engine)
             return True
         return False
 
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Action | None:
         """By default any key exits this input handler."""
         # Ignore modifier keys
         if event.sym in {
@@ -114,11 +119,11 @@ class AskuserEventHandler(EventHandler):
             return None
         return self.on_exit()
 
-    def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Optional[Action]:
+    def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Action | None:
         """By default any mouse clicks exits this input handler."""
         return self.on_exit()
 
-    def on_exit(self) -> Optional[Action]:
+    def on_exit(self) -> Action | None:
         """Called when the user is trying to exit or cancel an action.
 
         By default return to the main handker
@@ -150,10 +155,7 @@ class InventoryEventHandler(AskuserEventHandler):
         if height <= 3:
             height = 3
 
-        if self.engine.player.x <= 30:
-            x = 40
-        else:
-            x = 0
+        x = 40 if self.engine.player.x <= 30 else 0
 
         y = 0
 
@@ -170,7 +172,7 @@ class InventoryEventHandler(AskuserEventHandler):
         else:
             console.print(x + 1, y + 1, '(Empty)')
 
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Action | None:
         player = self.engine.player
         key = event.sym
         index = key - tcod.event.K_a
@@ -184,7 +186,7 @@ class InventoryEventHandler(AskuserEventHandler):
             return self.on_item_selected(selected_item)
         return super().ev_keydown(event)
 
-    def on_item_selected(self, item: Item) -> Optional[Action]:
+    def on_item_selected(self, item: Item) -> Action | None:
         """Called when the user selected a valid item."""
         raise NotImplementedError()
 
@@ -194,7 +196,7 @@ class InventoryActivateHandler(InventoryEventHandler):
 
     TITLE = 'Select and item to use'
 
-    def on_item_selected(self, item: Item) -> Optional[Action]:
+    def on_item_selected(self, item: Item) -> Action | None:
         """Return the action of the item selected."""
         return item.consumable.get_action(self.engine.player)
 
@@ -204,14 +206,87 @@ class InventoryDropHandler(InventoryEventHandler):
 
     TITLE = 'Select an item to drop'
 
-    def on_item_selected(self, item: Item) -> Optional[Action]:
+    def on_item_selected(self, item: Item) -> Action | None:
         """Drop this item."""
         return actions.DropItem(self.engine.player, item)
 
 
+class SelectIndexHandler(AskuserEventHandler):
+    """Handle asking the user for an index on the map."""
+
+    def __init__(self, engine: Engine):
+        """Sets the cursor to the player when this handler is constructed."""
+        super().__init__(engine)
+        player = self.engine.player
+        engine.mouse_location = player.x, player.y
+
+    def on_render(self, console: tcod.console) -> None:
+        """Highlight the tile under cursor."""
+        super().on_render(console)
+        x, y = self.engine.mouse_location
+        console.tiles_rgb['bg'][x, y] = colour.white
+        console.tiles_rgb['fg'][x, y] = colour.black
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Action | None:
+        """Check for key movemenets and confirmation keys"""
+        key = event.sym
+        if key in MOVE_KEYS:
+            # Holding modifyer key will speed up movement
+            modifier = 1
+            if event.mod & (tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT):
+                modifier *= 5
+            if event.mod & (tcod.event.KMOD_LCTRL | tcod.event.KMOD_RCTRL):
+                modifier *= 10
+            if event.mod & (tcod.event.KMOD_LALT | tcod.event.KMOD_RALT):
+                modifier *= 20
+
+            x, y = self.engine.mouse_location
+            dx, dy = MOVE_KEYS[key]
+            x += dx * modifier
+            y += dy * modifier
+            # Clamp cursor index to map size
+            x = max(0, min(x, self.engine.game_map.width - 1))
+            y = max(0, min(y, self.engine.game_map.height - 1))
+            self.engine.mouse_location = x, y
+            return None
+        elif key in CONFIRM_KEYS:
+            return self.on_index_selected(*self.engine.mouse_location)
+        return super().ev_mousebuttondown(event)
+
+    def ev_mousebuttondown(self, event: tcod.event.MouseButtonDown) -> Action | None:
+        """Left click confirms a selection."""
+        if self.engine.game_map.in_bounds(*event.tile) and event.button == 1:
+            return self.on_index_selected(*event.tile)
+        return super().ev_mousebuttondown(event)
+
+    def on_index_selected(self, x: int, y: int) -> Action | None:
+        """Call when an index is selected."""
+        raise NotImplementedError
+
+
+class LookHandler(SelectIndexHandler):
+    """Look the player around using the kayboard"""
+
+    def on_index_selected(self, x: int, y: int) -> None:
+        """Return back to main handler."""
+        self.engine.event_handler = MainGameEventHandler(self.enging)
+
+
+class SingleRangedAttackhandler(SelectIndexHandler):
+    """Handles targeting a single enemy. Only the enemy selected will be affected."""
+
+    def __init__(self, engine: Engine, callback: Callable[[Tuple[int, int]], Action | None]):
+        super().__init__(engine)
+
+        self.callback = callback
+
+    def on_index_selected(self, x: int, y: int) -> Action | None:
+        return self.callback((x, y))
+
+
 class MainGameEventHandler(EventHandler):
-    def ev_keydown(self, event: tcod.event.KeyDown) -> Optional[Action]:
-        action: Optional[Action] = None
+    def ev_keydown(self, event: tcod.event.KeyDown) -> Action | None:
+        action: Action | None = None
 
         key = event.sym
 
@@ -238,6 +313,9 @@ class MainGameEventHandler(EventHandler):
 
         elif key == tcod.event.K_d:
             self.engine.event_handler = InventoryDropHandler(self.engine)
+
+        elif key == tcod.event.K_SLASH:
+            self.engine.event_handler = LookHandler(self.engine)
 
         # No valid key was pressed
         return action

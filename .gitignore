@@ -1,1 +1,13 @@
-.venv
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+env/
+venv/
+ENV/
+
+# VSCode settings
+.vscode/
