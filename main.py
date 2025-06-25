@@ -9,6 +9,13 @@ import input_handlers
 import setup_game
 
 
+def save_game(handler: input_handlers.BaseEventHandler, filename: str) -> None:
+    """If the current event handler has an active Engine then saave it."""
+    if isinstance(handler, input_handlers.EventHandler):
+        handler.engine.save_as(filename)
+        print('Game saved!')
+
+
 def main() -> None:
     # Defining variables for screen, map, rooms etc.
     # TODO: move to json to clean up and fix size
@@ -58,10 +65,10 @@ def main() -> None:
         except exceptions.QuitWithoutSaving:
             raise
         except SystemExit:  # Save and quit
-            # //TODO: Add save function here
+            save_game(handler, 'savegame.sav')
             raise
         except BaseException:  # Save on any other unexpected error
-            # //TODO: Add the save function here
+            save_game(handler, 'savegame.sav')
             raise
 
 
