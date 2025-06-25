@@ -6,6 +6,8 @@ import tcod
 
 import colour
 import entity_factories
+import exceptions
+import input_handlers
 from engine import Engine
 from procgen import generate_dungeon
 
@@ -60,6 +62,8 @@ def main() -> None:
         colour.welcome_text,
     )
 
+    handler: input_handlers.BaseEventHandler = input_handlers.MainGameEventHandler(engine)
+
     # Create the screen
     # Definisng vsync is slightly redundant but all the best
     # games have it!!
@@ -75,20 +79,29 @@ def main() -> None:
         root_console = tcod.console.Console(screen_width, screen_height, order='F')
 
         # Game loop
-        while True:
-            # Where to print
-            root_console.clear()
-            engine.event_handler.on_render(console=root_console)
-            context.present(root_console)
+        try:
+            while True:
+                root_console.clear()
+                handler.on_render(console=root_console)
+                context.present(root_console)
 
-            try:
-                for event in tcod.event.wait():
-                    context.convert_event(event)
-                    engine.event_handler.handle_events(event)
-            except Exception:  # Handle exceptions in game
-                traceback.print_exc()  # Print err to stderr
-                # Then print to message log
-                engine.message_log.add_message(traceback.format_exc(), colour.error)
+                try:
+                    for event in tcod.event.wait():
+                        context.convert_event(event)
+                        handler = handler.handle_events(event)
+                except Exception:  # Handle exceptions in game
+                    traceback.print_exc()  # Print error to stderr
+                    # Then print the error to the message log
+                    if isinstance(handler, input_handlers.EventHandler):
+                        handler.engine.message_log.add_message(traceback.format_exc(), colour.error)
+        except exceptions.QuitWithoutSaving:
+            raise
+        except SystemExit:  # Save and quit
+            # //TODO: Add save function here
+            raise
+        except BaseException:  # Save on any other unexpected error
+            # //TODO: Add the save function here
+            raise
 
 
 if __name__ == '__main__':
