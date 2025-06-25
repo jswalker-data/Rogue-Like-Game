@@ -11,3 +11,6 @@ ENV/
 
 # VSCode settings
 .vscode/
+
+# Saved games
+*.sav

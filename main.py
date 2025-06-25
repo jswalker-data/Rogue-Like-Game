@@ -1,13 +1,19 @@
 #!/usr/bin/env python3
-import copy
 import traceback
 
 import tcod
 
 import colour
-import entity_factories
-from engine import Engine
-from procgen import generate_dungeon
+import exceptions
+import input_handlers
+import setup_game
+
+
+def save_game(handler: input_handlers.BaseEventHandler, filename: str) -> None:
+    """If the current event handler has an active Engine then saave it."""
+    if isinstance(handler, input_handlers.EventHandler):
+        handler.engine.save_as(filename)
+        print('Game saved!')
 
 
 def main() -> None:
@@ -15,16 +21,6 @@ def main() -> None:
     # TODO: move to json to clean up and fix size
     screen_width = 80
     screen_height = 50
-
-    map_width = 80
-    map_height = 43
-
-    room_max_size = 10
-    room_min_size = 6
-    max_rooms = 30
-
-    max_monsters_per_room = 2
-    max_items_per_room = 2
 
     # What font to use (the one saved in the repo)
     tileset = tcod.tileset.load_tilesheet(
@@ -34,31 +30,7 @@ def main() -> None:
         tcod.tileset.CHARMAP_TCOD,
     )
 
-    # Call entity class and define
-    # We can't use spawn as that passes the gamemap which isnt created yet
-    player = copy.deepcopy(entity_factories.player)
-
-    engine = Engine(player=player)
-
-    # Call game map
-    engine.game_map = generate_dungeon(
-        max_rooms=max_rooms,
-        room_min_size=room_min_size,
-        room_max_size=room_max_size,
-        map_width=map_width,
-        map_height=map_height,
-        max_monsters_per_room=max_monsters_per_room,
-        max_items_per_room=max_items_per_room,
-        engine=engine,
-    )
-
-    # Create our start fov
-    engine.update_fov()
-
-    engine.message_log.add_message(
-        'Hello and welcome, adventurer, to yet another random dungeon! Who would have thought it!',
-        colour.welcome_text,
-    )
+    handler: input_handlers.BaseEventHandler = setup_game.MainMenu()
 
     # Create the screen
     # Definisng vsync is slightly redundant but all the best
@@ -75,20 +47,29 @@ def main() -> None:
         root_console = tcod.console.Console(screen_width, screen_height, order='F')
 
         # Game loop
-        while True:
-            # Where to print
-            root_console.clear()
-            engine.event_handler.on_render(console=root_console)
-            context.present(root_console)
+        try:
+            while True:
+                root_console.clear()
+                handler.on_render(console=root_console)
+                context.present(root_console)
 
-            try:
-                for event in tcod.event.wait():
-                    context.convert_event(event)
-                    engine.event_handler.handle_events(event)
-            except Exception:  # Handle exceptions in game
-                traceback.print_exc()  # Print err to stderr
-                # Then print to message log
-                engine.message_log.add_message(traceback.format_exc(), colour.error)
+                try:
+                    for event in tcod.event.wait():
+                        context.convert_event(event)
+                        handler = handler.handle_events(event)
+                except Exception:  # Handle exceptions in game
+                    traceback.print_exc()  # Print error to stderr
+                    # Then print the error to the message log
+                    if isinstance(handler, input_handlers.EventHandler):
+                        handler.engine.message_log.add_message(traceback.format_exc(), colour.error)
+        except exceptions.QuitWithoutSaving:
+            raise
+        except SystemExit:  # Save and quit
+            save_game(handler, 'savegame.sav')
+            raise
+        except BaseException:  # Save on any other unexpected error
+            save_game(handler, 'savegame.sav')
+            raise
 
 
 if __name__ == '__main__':
