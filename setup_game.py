@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import copy
+import lzma
+import pickle
+import traceback
 
 import tcod
 
@@ -16,7 +19,7 @@ from procgen import generate_dungeon
 background_image = tcod.image.load('menu_background.png')[:, :, :3]
 
 
-def new_gane() -> Engine:
+def new_game() -> Engine:
     """Return a brand new game session as an Engine instance."""
     map_width = 80
     map_height = 43
@@ -48,6 +51,14 @@ def new_gane() -> Engine:
     return engine
 
 
+def load_game(filename: str) -> Engine:
+    """Load an Engine instance from a file."""
+    with open(filename, 'rb') as f:
+        engine = pickle.loads(lzma.decompress(f.read()))
+    assert isinstance(engine, Engine)
+    return engine
+
+
 class MainMenu(input_handlers.BaseEventHandler):
     """Handle the main menu rendering and input."""
 
@@ -65,7 +76,7 @@ class MainMenu(input_handlers.BaseEventHandler):
         console.print(
             console.width // 2,
             console.height - 2,
-            'By Josh Wallker',
+            'By Josh Walker',
             fg=colour.menu_title,
             alignment=tcod.CENTER,
         )
@@ -86,9 +97,14 @@ class MainMenu(input_handlers.BaseEventHandler):
         if event.sym in (tcod.event.K_q, tcod.event.K_ESCAPE):
             raise SystemExit()
         elif event.sym == tcod.event.K_c:
-            # TODO: Load the gaame here
-            pass
+            try:
+                return input_handlers.MainGameEventHandler(load_game('savegame.sav'))
+            except FileNotFoundError:
+                return input_handlers.PopupMessage(self, 'No saved game to load.')
+            except Exception as exc:
+                traceback.print_exc()  # Print to stderr
+                return input_handlers.PopupMessage(self, f'Failed to load game:\n {exc}')
         elif event.sym == tcod.event.K_n:
-            return input_handlers.MainGameEventHandler(new_gane())
+            return input_handlers.MainGameEventHandler(new_game())
 
         return None

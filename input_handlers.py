@@ -1,6 +1,7 @@
 # Type hinting that something can be set to None
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Callable, Tuple, Union
 
 import tcod
@@ -80,6 +81,33 @@ class BaseEventHandler(tcod.event.EventDispatch[ActionOrHandler]):
 
     def ev_quit(self, event: tcod.event.Quit) -> Action | None:
         raise SystemExit()
+
+
+class PopupMessage(BaseEventHandler):
+    """Display a popup ext window."""
+
+    def __init__(self, parent_handler: BaseEventHandler, text: str):
+        self.parent = parent_handler
+        self.text = text
+
+    def on_render(self, console: tcod.Console) -> None:
+        """Render the parent and dim the result, then print the message on top."""
+        self.parent.on_render(console)
+        console.tiles_rgb['fg'] //= 8
+        console.tiles_rgb['bg'] //= 8
+
+        console.print(
+            console.width // 2,
+            console.height // 2,
+            self.text,
+            fg=colour.white,
+            bg=colour.black,
+            alignment=tcod.CENTER,
+        )
+
+    def ev_keydown(self, event: tcod.event.KeyDown) -> BaseEventHandler | None:
+        """Any key returns to the parent handler."""
+        return self.parent
 
 
 class EventHandler(BaseEventHandler):
@@ -375,9 +403,18 @@ class MainGameEventHandler(EventHandler):
 
 
 class GameOverEventHandler(EventHandler):
+    def on_quit(self) -> None:
+        """Handle exiting out of a finished game"""
+        if os.path.exists('savegame.sav'):
+            os.remove('savegame.sav')  # Deletes the active save file
+        raise exceptions.QuitWithoutSaving()  # Avoid saving the game
+
+    def ev_quit(self, event: tcod.event.Quit) -> None:
+        self.on_quit()
+
     def ev_keydown(self, event: tcod.event.KeyDown) -> None:
         if event.sym == tcod.event.K_ESCAPE:
-            raise SystemExit()
+            self.on_quit()
 
 
 CURSOR_Y_KEYS = {
