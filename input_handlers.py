@@ -370,8 +370,13 @@ class MainGameEventHandler(EventHandler):
         action: Action | None = None
 
         key = event.sym
+        modifier = event.mod
 
         player = self.engine.player
+
+        # Take the stairs
+        if key == tcod.event.K_PERIOD and modifier & (tcod.event.KMOD_LSHIFT | tcod.event.KMOD_RSHIFT):
+            return actions.TakeStairsAction(player)
 
         if key in MOVE_KEYS:
             dx, dy = MOVE_KEYS[key]
