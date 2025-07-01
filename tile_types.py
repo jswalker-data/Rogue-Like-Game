@@ -6,9 +6,9 @@ import numpy as np
 # dtype creates a new data structure
 graphic_dt = np.dtype(
     [
-        ("ch", np.int32),  # Unicode codepoint
-        ("fg", "3B"),  # 3 unsugned bites for rgb, foreground
-        ("bg", "3B"),  # 3 unsugned bites for rgb, background
+        ('ch', np.int32),  # Unicode codepoint
+        ('fg', '3B'),  # 3 unsugned bites for rgb, foreground
+        ('bg', '3B'),  # 3 unsugned bites for rgb, background
     ]
 )
 
@@ -16,10 +16,10 @@ graphic_dt = np.dtype(
 # dark is holder for FOV colour manipulation
 tile_dt = np.dtype(
     [
-        ("walkable", np.bool_),  # True if we can walk over the tile
-        ("transparent", np.bool_),  # True if it doesn't block FOV
-        ("dark", graphic_dt),  # Graphic for when not in FOV
-        ("light", graphic_dt),  # Graphic for when tile is in FOV
+        ('walkable', np.bool_),  # True if we can walk over the tile
+        ('transparent', np.bool_),  # True if it doesn't block FOV
+        ('dark', graphic_dt),  # Graphic for when not in FOV
+        ('light', graphic_dt),  # Graphic for when tile is in FOV
     ]
 )
 
@@ -37,7 +37,7 @@ def new_tile(
 
 
 # SHROUD is those in darkness never seen and not yet seen
-SHROUD = np.array((ord(" "), (255, 255, 255), (0, 0, 0)), dtype=graphic_dt)
+SHROUD = np.array((ord(' '), (255, 255, 255), (0, 0, 0)), dtype=graphic_dt)
 
 # Can use ' ' or '#' for space character, foreground white (wont matter)
 # and background colours slightly different so we can differentiate at this
@@ -45,13 +45,20 @@ SHROUD = np.array((ord(" "), (255, 255, 255), (0, 0, 0)), dtype=graphic_dt)
 floor = new_tile(
     walkable=True,
     transparent=True,
-    dark=(ord(" "), (255, 255, 255), (50, 50, 150)),
-    light=(ord(" "), (255, 255, 255), (200, 180, 50)),
+    dark=(ord(' '), (255, 255, 255), (50, 50, 150)),
+    light=(ord(' '), (255, 255, 255), (200, 180, 50)),
 )
 
 wall = new_tile(
     walkable=False,
     transparent=False,
-    dark=(ord(" "), (255, 255, 255), (0, 0, 100)),
-    light=(ord(" "), (255, 255, 255), (130, 110, 50)),
+    dark=(ord(' '), (255, 255, 255), (0, 0, 100)),
+    light=(ord(' '), (255, 255, 255), (130, 110, 50)),
+)
+
+down_stairs = new_tile(
+    walkable=True,
+    transparent=True,
+    dark=(ord('>'), (0, 0, 100), (50, 50, 150)),
+    light=(ord('>'), (255, 255, 255), (200, 180, 50)),
 )
