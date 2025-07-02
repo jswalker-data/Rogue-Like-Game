@@ -155,7 +155,7 @@ class EventHandler(BaseEventHandler):
 
 
 # Not super useful itsel but we will create special subclasses that do specific actions
-class AskuserEventHandler(EventHandler):
+class AskUserEventHandler(EventHandler):
     """Handles user input for actions that require special input."""
 
     def ev_keydown(self, event: tcod.event.KeyDown) -> ActionOrHandler | None:
@@ -185,7 +185,36 @@ class AskuserEventHandler(EventHandler):
         return MainGameEventHandler(self.engine)
 
 
-class InventoryEventHandler(AskuserEventHandler):
+class LevelUpEventHandler(AskUserEventHandler):
+    TITLE = 'Level Up'
+
+    def on_render(self, console: tcod.Console) -> None:
+        super().on_render(console)
+
+        x = 40 if self.engine.player.x <= 30 else 0
+
+        console.draw_frame(
+            x=x,
+            y=0,
+            width=35,
+            height=8,
+            title=self.TITLE,
+            clear=True,
+            fg=(255, 255, 255),
+            bg=(0, 0, 0),
+        )
+
+        console.print(x=x + 1, y=1, string="Congratulations! You don'tnsuck! Level up!")
+        console.print(x=x + 1, y=2, string='Select an attribute to increase.')
+
+        console.print(x=x + 1, y=4, string=f'a) Constitution (+20 HP, from {self.engine.player.fighter.max_hp})')
+
+        console.print(x=x + 1, y=5, string=f'a) Strength (+1 attack, from {self.engine.player.fighter.power})')
+
+        console.print(x=x + 1, y=6, string=f'a) Constitution (+1 defense, from {self.engine.player.fighter.defense})')
+
+
+class InventoryEventHandler(AskUserEventHandler):
     """This handler lets the user select an item.
 
     What happens then depends on the subclass
@@ -263,7 +292,7 @@ class InventoryDropHandler(InventoryEventHandler):
         return actions.DropItem(self.engine.player, item)
 
 
-class SelectIndexHandler(AskuserEventHandler):
+class SelectIndexHandler(AskUserEventHandler):
     """Handle asking the user for an index on the map."""
 
     def __init__(self, engine: Engine):

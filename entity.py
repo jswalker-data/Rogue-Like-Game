@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import copy
 import math
-from typing import TYPE_CHECKING, Optional, Tuple, Type, TypeVar, Union
+from typing import TYPE_CHECKING, Tuple, Type, TypeVar, Union
 
 from render_order import RenderOrder
 
@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from components.consumable import Consumable
     from components.fighter import Fighter
     from components.inventory import Inventory
+    from components.level import Level
     from game_map import GameMap
 
 
@@ -26,7 +27,7 @@ class Entity:
     enemies, items and anyting else
     """
 
-    parent: Union[GameMap, Inventory]
+    parent: GameMap | Inventory
 
     # char is display character, colour is rgb
     def __init__(
@@ -102,6 +103,7 @@ class Actor(Entity):
         ai_cls: Type[BaseAI],
         fighter: Fighter,
         inventory: Inventory,
+        level: Level,
     ):
         super().__init__(
             x=x,
@@ -118,6 +120,9 @@ class Actor(Entity):
 
         self.inventory = inventory
         self.inventory.parent = self
+
+        self.level = level
+        self.level.parent = self
 
     @property
     def is_alive(self) -> bool:

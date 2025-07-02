@@ -2,6 +2,7 @@ from components import consumable
 from components.ai import HostileEnemy
 from components.fighter import Fighter
 from components.inventory import Inventory
+from components.level import Level
 from entity import Actor, Item
 
 # //TODO: create new class for player only
@@ -13,6 +14,7 @@ player = Actor(
     ai_cls=HostileEnemy,
     fighter=Fighter(hp=30, defense=2, power=5),
     inventory=Inventory(capacity=26),
+    level=Level(level_up_base=200),
 )
 
 orc = Actor(
@@ -22,7 +24,9 @@ orc = Actor(
     ai_cls=HostileEnemy,
     fighter=Fighter(hp=10, defense=0, power=3),
     inventory=Inventory(capacity=0),
+    level=Level(xp_given=35),
 )
+
 troll = Actor(
     char='T',
     colour=(0, 127, 0),
@@ -30,6 +34,7 @@ troll = Actor(
     ai_cls=HostileEnemy,
     fighter=Fighter(hp=16, defense=1, power=4),
     inventory=Inventory(capacity=0),
+    level=Level(xp_given=100),
 )
 
 confusion_scroll = Item(
